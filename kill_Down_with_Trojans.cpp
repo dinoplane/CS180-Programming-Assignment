@@ -2,8 +2,9 @@
 #include <fstream>
 #include <vector>
 #include <cstring> // For strlen
-#include <limits>
 
+#include <limits>
+#include <iomanip>
 
 constexpr int MAX_N = 100;
 
@@ -56,6 +57,34 @@ void print_tile_data(int n, const std::vector<std::vector<Tile>>& tiles) {
     }
 }
 
+void pretty_print_tiles(int n, const std::vector<std::vector<Tile>>& tiles, 
+                            std::vector<std::pair<int, int>> path) {
+    std::cout << "\nTiles in Question:\n";
+
+    int i = 0;
+    for (int x = 0; x < n; x++) {
+        for (int y = 0; y < n; y++) {
+            std::string lb = "[";
+            std::string rb = "]";
+            if (x == path[i].first && y == path[i].second){
+                i++;
+                lb = "*";
+                rb = "*";
+            }
+
+            if (tiles[x][y].t == DAMAGE)
+                std::cout << lb << std::setw(3) << -tiles[x][y].v << rb << " ";
+            if (tiles[x][y].t == HEALING)
+                std::cout << lb << std::setw(3) << tiles[x][y].v << rb << " ";
+            if (tiles[x][y].t == PROTECTION)
+                std::cout << lb << " P " << rb << " ";
+            if (tiles[x][y].t == MULTIPLIER)
+                std::cout << lb << " M " << rb << " ";
+        }
+        std::cout << '\n';
+    }
+    std::cout << '\n';
+}
 void show_memo(int n, int**** memo){
     std::cout << "\nMemo:\n";
     for (int x = 0; x < n; x++) {
@@ -67,7 +96,7 @@ void show_memo(int n, int**** memo){
         for (int y = 0; y < n; y++) {
             std::cout << "[" << memo[x][y][1][0] << "|" << memo[x][y][1][1] << "]  ";
         }
-        std::cout << '\n' << '\n';
+        std::cout << "\n\n";
     }
 }
 
@@ -124,13 +153,9 @@ int top_down_pathfind(int n, const std::vector<std::vector<Tile>>& tiles,
     int tile_type = tiles[i][j].t;
     int tile_val = tiles[i][j].v;
 
-    // int is_mult = (tile_type == MULTIPLIER) ? 1 : 0;
-    // has_protection = (tile_type == PROTECTION);
-
     // We found the value in the memo
     if (memo[i][j][has_protection][has_multiplier] != -1)
         return memo[i][j][has_protection][has_multiplier];
-
 
     // We at the bottom right
     if (i == n - 1 && j == n - 1){
@@ -143,7 +168,6 @@ int top_down_pathfind(int n, const std::vector<std::vector<Tile>>& tiles,
         return memo[i][j][has_protection][has_multiplier];
     }
         
-
     // You are at the bottom.
     if (i == n - 1)
         memo[i][j][has_protection][has_multiplier] = eval_val(n, tiles, memo, 
@@ -177,7 +201,7 @@ int top_down_pathfind(int n, const std::vector<std::vector<Tile>>& tiles,
 }
 
 
-void checker(int n, const std::vector<std::vector<Tile>>& tiles, 
+std::vector<std::pair<int, int>>  checker(int n, const std::vector<std::vector<Tile>>& tiles, 
                         int**** memo){
     int i = 0;
     int j = 0;
@@ -185,12 +209,10 @@ void checker(int n, const std::vector<std::vector<Tile>>& tiles,
     int M = 0;
 
     std::vector<std::pair<int, int>> path;
-    // path.push_back({0,0});
     while (i < n && j < n){
         path.push_back({i, j});
         // Check your tile
         int tile_type = tiles[i][j].t;
-        // int tile_val = tiles[i][j].v;
         
         if (tile_type == PROTECTION)
             P = 1;
@@ -238,15 +260,16 @@ void checker(int n, const std::vector<std::vector<Tile>>& tiles,
             j += 1;
         } else {
             i += 1;
-        }
-        
-        
+        }   
     }
-
+    
+    std::cout << "Path: ";
     for (auto p : path){
         std::cout << "(" << p.first  << ", " << p.second << ") ";
     }
     std::cout << "\n";
+
+    return path;
 }
 
 bool DP(int n, int H, const std::vector<std::vector<Tile>>& tiles) {
@@ -271,8 +294,12 @@ bool DP(int n, int H, const std::vector<std::vector<Tile>>& tiles) {
     // Essentially, I abstracted HP out of the problem kek
     int needed_hp = top_down_pathfind(n, tiles, memo, 0, 0, 0, 0);
 
-    show_memo(n, memo);
-    checker(n, tiles, memo);
+    // show_memo(n, memo);
+
+    std::cout << "Current HP: " << H << "\n";
+    
+    std::cout << "Needed HP: " << needed_hp << "\n";
+    // pretty_print_tiles(n, tiles, checker(n, tiles, memo));
 
     // Don't forget to deallocate the memory to avoid memory leaks
     for (int i = 0; i < n; ++i) {
